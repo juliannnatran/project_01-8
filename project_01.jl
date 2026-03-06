@@ -246,6 +246,116 @@ begin
 
 end
 
+begin
+    using Plots
+
+    # -----------------------------
+    # Geometry / frame dimensions
+    # -----------------------------
+    h1 = 0.2          # frame height [m]
+    w1 = 0.1          # frame radial offset [m]
+    Lp = L_param      # pendulum length [m]
+
+    # -----------------------------
+    # 1) Plot angle vs time
+    # -----------------------------
+    P = plot(
+        title = "Spinning Pendulum Angle vs Time",
+        xlabel = "Time [s]",
+        ylabel = "Angle θ [deg]",
+        linewidth = 3,
+        legend = :topright
+    )
+
+    plot!(P, sol_slow.t, sol_slow[1, :] .* 180 / pi, label = "Slow rotation Ω = $Ω_slow rad/s")
+    plot!(P, sol_fast.t, sol_fast[1, :] .* 180 / pi, label = "Fast rotation Ω = $Ω_fast rad/s")
+
+    display(P)
+end
+
+begin
+    using Plots
+
+    # -----------------------------
+    # Helper function:
+    # Convert θ(t) in rotating frame to fixed-frame coordinates
+    # -----------------------------
+    function pendulum_xyz(theta, t, Ω, w1, h1, Lp)
+        ϕ = Ω * t
+
+        # Position in rotating frame:
+        # x' = w1 + L sin(θ)
+        # z  = h1 - L cos(θ)
+        xprime = w1 + Lp * sin(theta)
+        z = h1 - Lp * cos(theta)
+
+        # Rotate x' about z-axis into inertial frame
+        x = xprime * cos(ϕ)
+        y = xprime * sin(ϕ)
+
+        return x, y, z
+    end
+
+    # -----------------------------
+    # Animation function
+    # -----------------------------
+    function animate_spinning_pendulum(solution, Ω, filename;
+                                       w1 = 0.1, h1 = 0.2, Lp = 0.15)
+
+        anim = @animate for i in 1:length(solution.t)
+            t = solution.t[i]
+            θ = solution[1, i]
+
+            # pivot point (top of pendulum) rotating with frame
+            xp = w1 * cos(Ω * t)
+            yp = w1 * sin(Ω * t)
+            zp = h1
+
+            # bob position
+            xb, yb, zb = pendulum_xyz(θ, t, Ω, w1, h1, Lp)
+
+            plot(
+                xlim = (-0.3, 0.3),
+                ylim = (-0.3, 0.3),
+                zlim = (0.0, 0.3),
+                xlabel = "x [m]",
+                ylabel = "y [m]",
+                zlabel = "z [m]",
+                title = "Spinning Pendulum Animation, t = $(round(t, digits=2)) s",
+                legend = false,
+                aspect_ratio = :equal,
+                camera = (35, 25)
+            )
+
+            # vertical rotation axis
+            plot!([0, 0], [0, 0], [0, h1 + 0.03], lw = 2)
+
+            # top arm from axis to pivot
+            plot!([0, xp], [0, yp], [h1, h1], lw = 3)
+
+            # pendulum rod
+            plot!([xp, xb], [yp, yb], [zp, zb], lw = 4)
+
+            # pivot point
+            scatter!([xp], [yp], [zp], markersize = 5)
+
+            # bob
+            scatter!([xb], [yb], [zb], markersize = 8)
+        end
+
+        gif(anim, filename, fps = 25)
+    end
+
+    # -----------------------------
+    # Create GIFs
+    # -----------------------------
+    animate_spinning_pendulum(sol_slow, Ω_slow, "spinning_pendulum_slow.gif";
+                              w1 = w1, h1 = h1, Lp = Lp)
+
+    animate_spinning_pendulum(sol_fast, Ω_fast, "spinning_pendulum_fast.gif";
+                              w1 = w1, h1 = h1, Lp = Lp)
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
