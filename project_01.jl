@@ -156,6 +156,96 @@ Once acceleration is calculated, the position and velocity of the pendulum can b
 
 """
 
+begin
+
+    # unwrap symbolic function
+
+    θdd_fun = θ_double_dot[1]
+
+ 
+
+    # parameters
+
+    g_param = 9.81
+
+    L_param = 0.15
+
+    m_param = 0.1
+
+    w_param = 0.1
+
+ 
+
+    Ω_slow = 0.3
+
+    Ω_fast = 14.0
+
+ 
+
+    # initial conditions
+
+    θ0 = 30*pi/180
+
+    θd0 = 0.0
+
+    u0 = [θ0, θd0]
+
+ 
+
+    tspan = (0.0, 11.0)
+
+ 
+
+    # ODE system
+
+    function pendulum_eom!(du,u,p,t)
+
+ 
+
+        θ = u[1]
+
+        θdot = u[2]
+
+ 
+
+        g,L,m,Ω,w = p
+
+ 
+
+        du[1] = θdot
+
+        du[2] = θdd_fun(θ,θdot,g,L,m,Ω,w)
+
+ 
+
+    end
+
+ 
+
+    # parameter sets
+
+    p_slow = (g_param,L_param,m_param,Ω_slow,w_param)
+
+    p_fast = (g_param,L_param,m_param,Ω_fast,w_param)
+
+ 
+
+    # solve
+
+    prob_slow = ODEProblem(pendulum_eom!,u0,tspan,p_slow)
+
+    sol_slow = solve(prob_slow,Tsit5())
+
+ 
+
+    prob_fast = ODEProblem(pendulum_eom!,u0,tspan,p_fast)
+
+    sol_fast = solve(prob_fast,Tsit5())
+
+ 
+
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
